@@ -1,0 +1,13 @@
+[package]
+name = "myvm"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+strum = "*"
+strum_macros = "*"
+log = "*"
+env_logger = "*"
+
+[dependencies.custom_macros]
+path = "custom_macros"
