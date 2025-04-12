@@ -89,13 +89,13 @@ fn impl_opcode_struct(ast: &syn::ItemEnum) -> Result<proc_macro2::TokenStream, S
                             part_stringers.extend(quote!(let a0 = Register::from_str(parts[1]).map_err(|x| Self::Err::Fail(x.to_string()))?;));
                         }
                         ("Register", 1) => {
-                            part_encoders.extend(quote!(op_parts[1] = a1.as_mask_first();));
-                            part_decoders.extend(quote!(let a1 = Register::from_instruction_first(ins).ok_or("unknown register")?;));
+                            part_encoders.extend(quote!(op_parts[1] = a1.as_mask_second();));
+                            part_decoders.extend(quote!(let a1 = Register::from_instruction_second(ins).ok_or("unknown register")?;));
                             part_stringers.extend(quote!(let a1 = Register::from_str(parts[2]).map_err(|x| Self::Err::Fail(x.to_string()))?;));
                         }
                         ("Register", 2) => {
-                            part_encoders.extend(quote!(op_parts[2] = a2.as_mask_first();));
-                            part_decoders.extend(quote!(let a2 = Register::from_instruction_first(ins).ok_or("unknown register")?;));
+                            part_encoders.extend(quote!(op_parts[2] = a2.as_mask_third();));
+                            part_decoders.extend(quote!(let a2 = Register::from_instruction_third(ins).ok_or("unknown register")?;));
                             part_stringers.extend(quote!(let a2 = Register::from_str(parts[3]).map_err(|x| Self::Err::Fail(x.to_string()))?;));
                         }
                         ("Literal4Bit", i) => {

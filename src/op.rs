@@ -96,7 +96,7 @@ mod test {
     };
 
     #[test]
-    fn test_encoding() {
+    fn test_encoding() -> Result<(), String> {
         let ops = vec![
             Imm(M, Literal12Bit::new(0x30)?),
             AddImm(C, Literal7Bit::new(0x20)?),
@@ -121,12 +121,13 @@ mod test {
             LoadStackoffset(A, BP, Literal4Bit::new(0x3)?),
             BranchIf(Literal10Bit::new(0x56)?),
             Branch(Literal10Bit::new(0x42)?),
-            BranchRegisterIf(A, B),
+            BranchRegisterIf(A, Literal7Bit::new(0x3)?),
             System(A, B, Literal4Bit::new(0x3)?),
         ];
         let encoded: Vec<_> = ops.iter().map(|x| x.encode_u16()).collect();
         for (instr, reg) in ops.iter().zip(encoded.iter()) {
             assert_eq!(*instr, Instruction::try_from(*reg)?);
         }
+        Ok(())
     }
 }
