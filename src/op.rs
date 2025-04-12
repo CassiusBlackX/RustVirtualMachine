@@ -11,6 +11,7 @@ pub enum InstructionParseError {
     Fail(String),
 }
 
+
 pub trait InstructionPart {
     fn as_mask(&self) -> u16;
     fn from_instruction(instr: u16) -> Self;

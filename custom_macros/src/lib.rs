@@ -41,7 +41,7 @@ fn variant_opcode_val(v: &syn::Variant) -> u8 {
             return value.base10_parse().unwrap();
         }
     }
-    panic!("instruction ??? has no opcode")
+    panic!("instruction ??? has no opcode");
 }
 
 fn impl_opcode_struct(ast: &syn::ItemEnum) -> Result<proc_macro2::TokenStream, String> {
@@ -69,7 +69,7 @@ fn impl_opcode_struct(ast: &syn::ItemEnum) -> Result<proc_macro2::TokenStream, S
                     #name_upper => {
                         assert_length(&parts, 1).map_err(|x| Self::Err::Fail(x))?;
                         Ok(Self::#name)
-                    }
+                    },
                 });
             }
             syn::Fields::Unnamed(fields) => {
@@ -86,17 +86,17 @@ fn impl_opcode_struct(ast: &syn::ItemEnum) -> Result<proc_macro2::TokenStream, S
                         ("Register", 0) => {
                             part_encoders.extend(quote!(op_parts[0] = a0.as_mask_first();));
                             part_decoders.extend(quote!(let a0 = Register::from_instruction_first(ins).ok_or("unknown register")?;));
-                            part_stringers.extend(quote!(let a0 = Register::from_str(parts[1]).map_err(|x| Self::Err::Fail(x))?;));
+                            part_stringers.extend(quote!(let a0 = Register::from_str(parts[1]).map_err(|x| Self::Err::Fail(x.to_string()))?;));
                         }
                         ("Register", 1) => {
                             part_encoders.extend(quote!(op_parts[1] = a1.as_mask_first();));
                             part_decoders.extend(quote!(let a1 = Register::from_instruction_first(ins).ok_or("unknown register")?;));
-                            part_stringers.extend(quote!(let a1 = Register::from_str(parts[2]).map_err(|x| Self::Err::Fail(x))?;));
+                            part_stringers.extend(quote!(let a1 = Register::from_str(parts[2]).map_err(|x| Self::Err::Fail(x.to_string()))?;));
                         }
                         ("Register", 2) => {
                             part_encoders.extend(quote!(op_parts[2] = a2.as_mask_first();));
                             part_decoders.extend(quote!(let a2 = Register::from_instruction_first(ins).ok_or("unknown register")?;));
-                            part_stringers.extend(quote!(let a2 = Register::from_str(parts[3]).map_err(|x| Self::Err::Fail(x))?;));
+                            part_stringers.extend(quote!(let a2 = Register::from_str(parts[3]).map_err(|x| Self::Err::Fail(x.to_string()))?;));
                         }
                         ("Literal4Bit", i) => {
                             let argname = get_arg_name(i)?;
@@ -133,11 +133,11 @@ fn impl_opcode_struct(ast: &syn::ItemEnum) -> Result<proc_macro2::TokenStream, S
                                 op_parts[#i] = ((#argname.0 & 0xf) as u16) | (((#argname.0 as u16) & 0x70) << 5) | (((#argname.0 as u16) & 0x380) << 5);
                             });
                             part_decoders.extend(quote! {
-                                let #argname = Literal7Bit::new(((ins&0xf) as u16) | (((ins & 0xe00) >> 5) as u16) | (((ins & 0x7000) >> 5) as u16))?;
+                                let #argname = Literal10Bit::new(((ins&0xf) as u16) | (((ins & 0xe00) >> 5) as u16) | (((ins & 0x7000) >> 5) as u16))?;
                             });
                             part_stringers.extend(quote! {
                                 let (part, radix) = Instruction::pre_handle_number(&parts[#part_index]).map_err(|x| Self::Err::Fail(x))?;
-                                let #argname = Literal7Bit::from_str_radix(part, radix).map_err(|x| Self::Err::Fail(x))?;
+                                let #argname = Literal10Bit::from_str_radix(part, radix).map_err(|x| Self::Err::Fail(x))?;
                             });
                         }
                         ("Literal12Bit", i) => {
@@ -151,7 +151,7 @@ fn impl_opcode_struct(ast: &syn::ItemEnum) -> Result<proc_macro2::TokenStream, S
                             });
                             part_stringers.extend(quote! {
                                 let (part, radix) = Instruction::pre_handle_number(&parts[#part_index]).map_err(|x| Self::Err::Fail(x))?;
-                                let #argname = Literal7Bit::from_str_radix(part, radix).map_err(|x| Self::Err::Fail(x))?;
+                                let #argname = Literal12Bit::from_str_radix(part, radix).map_err(|x| Self::Err::Fail(x))?;
                             });
                         }
                         ("RelationOp", i) => {
@@ -164,7 +164,8 @@ fn impl_opcode_struct(ast: &syn::ItemEnum) -> Result<proc_macro2::TokenStream, S
                                 let #argname = RelationOp::try_from(ins & 0xf)?;
                             });
                             part_stringers.extend(quote! {
-                                let #argname = RelationOp::from_str(&parts[#part_index]).map_err(|x| Self::Err::Fail(x))?;
+                                // but since RelationOp is derived by `EnumString`， instead we should use
+                                let #argname = RelationOp::from_str(parts[#part_index]).map_err(|x| Self::Err::Fail(x.to_string()))?;
                             });
                         }
                         ("StackOp", i) => {
@@ -174,10 +175,10 @@ fn impl_opcode_struct(ast: &syn::ItemEnum) -> Result<proc_macro2::TokenStream, S
                                 op_parts[#i] = (*#argname as u16) & 0xf;
                             });
                             part_decoders.extend(quote! {
-                                let #argname = RelationOp::try_from(ins & 0xf)?;
+                                let #argname = StackOp::try_from(ins & 0xf)?;
                             });
                             part_stringers.extend(quote! {
-                                let #argname = RelationOp::from_str(&parts[#part_index]).map_err(|x| Self::Err::Fail(x))?;
+                                let #argname = StackOp::from_str(&parts[#part_index]).map_err(|x| Self::Err::Fail(x.to_string()))?;
                             });
                         }
                         (_, _) => panic!("invalid type {} at place {}", type_name, i),
@@ -199,7 +200,7 @@ fn impl_opcode_struct(ast: &syn::ItemEnum) -> Result<proc_macro2::TokenStream, S
                             let mut op_parts: [u16; 3] = [0, 0, 0];
                             #part_encoders
                             0x8000 | op_parts[0] | op_parts[1] | op_parts[2]
-                        }
+                        },
                     });
                 } else {
                     let opcode_mask = ((opcode_value as u16) & 0x1f) << 4;
@@ -208,13 +209,13 @@ fn impl_opcode_struct(ast: &syn::ItemEnum) -> Result<proc_macro2::TokenStream, S
                             let mut op_parts: [u16; 3] = [0, 0, 0];
                             #part_encoders
                             op_parts[0] | op_parts[1] | op_parts[2] | #opcode_mask
-                        }
+                        },
                     });
                     field_u16_decodings.extend(quote! {
                         #opcode_value => {
                             #part_decoders
                             Ok(#name_matcher)
-                        }
+                        },
                     });
                 }
 
@@ -226,24 +227,24 @@ fn impl_opcode_struct(ast: &syn::ItemEnum) -> Result<proc_macro2::TokenStream, S
                         assert_length(&parts, #types_len + 1).map_err(|x| Self::Err::Fail(x))?;
                         #part_stringers
                         Ok(#name_matcher)
-                    }
+                    },
                 });
 
                 match types.len() {
                     0 => field_to_string.extend(quote! {
-                        Self::#name => write!(f, "{}", stringify!(#name))
+                        Self::#name => write!(f, "{}", stringify!(#name)),
                     }),
                     1 => field_to_string.extend(quote! {
-                        Self::#name(a0) => write!(f, "{} {}", stringify!(#name), a0)
+                        Self::#name(a0) => write!(f, "{} {}", stringify!(#name), a0),
                     }),
                     2 => field_to_string.extend(quote! {
-                        Self::#name(a0, a1) => write!(f, "{} {} {}", stringify!(#name), a0, a1)
+                        Self::#name(a0, a1) => write!(f, "{} {} {}", stringify!(#name), a0, a1),
                     }),
                     3 => field_to_string.extend(quote! {
-                        Self::#name(a0, a1, a2) => write!(f, "{} {} {} {}", stringify!(#name), a0, a1, a2)
+                        Self::#name(a0, a1, a2) => write!(f, "{} {} {} {}", stringify!(#name), a0, a1, a2),
                     }),
                     x => panic!("{}", format!("types must be 0-3, got {}", x)),
-                }
+                };
             }
             _ => panic!("fields must be unnamed in variant: {}", name),
         }
@@ -266,7 +267,7 @@ fn impl_opcode_struct(ast: &syn::ItemEnum) -> Result<proc_macro2::TokenStream, S
                 Ok(match fst {
                     '$' => (&s[1..], 16),
                     '%' => (&s[1..], 2),
-                    _ => (s, 10),
+                    _ => (s, 10)
                 })
             }
 
@@ -278,7 +279,7 @@ fn impl_opcode_struct(ast: &syn::ItemEnum) -> Result<proc_macro2::TokenStream, S
                 let (num, radix) = match fst {
                     '$' => (&s[1..], 16),
                     '%' => (&s[1..], 2),
-                    _ => (s, 10),
+                    _ => (s, 10)
                 };
                 u16::from_str_radix(num, radix).map_err(|x| format!("{}", x))
             }
@@ -291,7 +292,7 @@ fn impl_opcode_struct(ast: &syn::ItemEnum) -> Result<proc_macro2::TokenStream, S
                 let (num, radix) = match fst {
                     '$' => (&s[1..], 16),
                     '%' => (&s[1..], 2),
-                    _ => (s, 10),
+                    _ => (s, 10)
                 };
                 i16::from_str_radix(num, radix).map_err(|x| format!("{}", x))
             }
@@ -310,19 +311,19 @@ fn impl_opcode_struct(ast: &syn::ItemEnum) -> Result<proc_macro2::TokenStream, S
         impl TryFrom<u16> for Instruction {
             type Error = String;
 
-            fn try_from(instr: u16) -> Result<Self, Self::Error> {
+            fn try_from(ins: u16) -> Result<Self, Self::Error> {
                 if (ins & 0x8000) == 0 {
                     // match other instructions
-                    let op = ((instr & 0x1f0) >> 4) as u8;
+                    let op = ((ins & 0x1f0) >> 4) as u8;
                     match op {
                         #field_u16_decodings
-                        _ => Err(format!("unknown opcode {:X}", op))
+                        _ => Err(format!("unknown opcode {:X}", op)),
                     }
                 } else {
                     // match imm instructions
-                    let register_bits = ((instr & 0x7000) >> 12) as u8;
-                    let register = Register::from_u8(register_bits).ok_or("invalid register")?;
-                    let lit = Literal12Bit::new(instr & 0xfff)?;
+                    let register_bits = ((ins & 0x7000) >> 12) as u8;
+                    let register = Register::new(register_bits).ok_or("invalid register")?;
+                    let lit = Literal12Bit::new(ins & 0xfff)?;
                     Ok(Instruction::Imm(register, lit))
                 }
             }
@@ -332,7 +333,7 @@ fn impl_opcode_struct(ast: &syn::ItemEnum) -> Result<proc_macro2::TokenStream, S
             fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
                 match self {
                     #field_to_string
-                    _ => write!(f, "placeholder")
+                    _ => write!(f, "placeholder"),
                 }
             }
         }
@@ -357,7 +358,7 @@ fn impl_opcode_struct(ast: &syn::ItemEnum) -> Result<proc_macro2::TokenStream, S
                 let part_upper = parts[0].to_uppercase();
                 match part_upper.as_str() {
                     #field_from_str
-                    _ => Err(Self::Err::Fail(format!("unknown op {}",)))
+                    _ => Err(Self::Err::Fail(format!("unknown op {}", parts[0]))),
                 }
             }
         }

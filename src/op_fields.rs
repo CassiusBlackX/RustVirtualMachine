@@ -1,6 +1,6 @@
 use std::fmt;
 
-use strum_macros::EnumString;
+use strum_macros::{Display, EnumString};
 
 enum CombinedResult<A, B> {
     Unsigned(A),
@@ -212,7 +212,7 @@ impl fmt::Display for Literal12Bit {
 }
 
 #[repr(u8)]
-#[derive(Debug, PartialEq, Eq, Clone, Copy, EnumString)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy, EnumString, Display)]
 pub enum RelationOp {
     Eq,
     Neq,
@@ -245,7 +245,7 @@ impl TryFrom<u16> for RelationOp {
 }
 
 #[repr(u8)]
-#[derive(Debug, PartialEq, Eq, Clone, Copy, EnumString)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy, EnumString, Display)]
 pub enum StackOp {
     Pop,
     Push,
