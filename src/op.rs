@@ -11,7 +11,6 @@ pub enum InstructionParseError {
     Fail(String),
 }
 
-
 pub trait InstructionPart {
     fn as_mask(&self) -> u16;
     fn from_instruction(instr: u16) -> Self;
@@ -97,7 +96,7 @@ mod test {
 
     #[test]
     fn test_encoding() -> Result<(), String> {
-        let ops = vec![
+        let ops = [
             Imm(M, Literal12Bit::new(0x30)?),
             AddImm(C, Literal7Bit::new(0x20)?),
             AddImmSigned(A, Literal7Bit::new(0x7)?),
